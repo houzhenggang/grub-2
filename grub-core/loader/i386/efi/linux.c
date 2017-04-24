@@ -28,7 +28,7 @@
 #include <grub/efi/efi.h>
 #include <grub/tpm.h>
 
-#include "../verity-hash.h"
+#include <grub/verity-hash.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -169,7 +169,8 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
                         argv[i]);
           goto fail;
         }
-      grub_tpm_measure (ptr, cursize, GRUB_INITRD_PCR, "UEFI Linux initrd");
+      grub_tpm_measure (ptr, cursize, GRUB_BINARY_PCR, "grub_linuxefi", "Initrd");
+      grub_print_error();
       ptr += cursize;
       grub_memset (ptr, 0, ALIGN_UP_OVERHEAD (cursize, 4));
       ptr += ALIGN_UP_OVERHEAD (cursize, 4);
@@ -225,7 +226,8 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  grub_tpm_measure (kernel, filelen, GRUB_KERNEL_PCR, "UEFI Linux kernel");
+  grub_tpm_measure (kernel, filelen, GRUB_BINARY_PCR, "grub_linuxefi", "Kernel");
+  grub_print_error();
 
   if (! grub_linuxefi_secure_validate (kernel, filelen))
     {
@@ -284,7 +286,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
                               linux_cmdline + sizeof (LINUX_IMAGE) - 1,
 			      lh.cmdline_size - (sizeof (LINUX_IMAGE) - 1));
 
-  grub_pass_verity_hash(&lh, linux_cmdline);
+  grub_pass_verity_hash(&lh, linux_cmdline, lh.cmdline_size);
   lh.cmd_line_ptr = (grub_uint32_t)(grub_uint64_t)linux_cmdline;
 
   handover_offset = lh.handover_offset;

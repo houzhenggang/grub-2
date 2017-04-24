@@ -20,8 +20,18 @@
 #include <grub/i386/linux.h>
 #include <grub/misc.h>
 
+#include <grub/verity-hash.h>
+
 grub_elf_t
 grub_xen_file (grub_file_t file)
+{
+  return grub_xen_file_and_cmdline (file, NULL, 0);
+}
+
+grub_elf_t
+grub_xen_file_and_cmdline (grub_file_t file,
+			   char *cmdline,
+			   grub_size_t cmdline_max_len)
 {
   grub_elf_t elf;
   struct linux_kernel_header lh;
@@ -55,11 +65,14 @@ grub_xen_file (grub_file_t file)
   grub_dprintf ("xen", "found bzimage payload 0x%llx-0x%llx\n",
 		(unsigned long long) (lh.setup_sects + 1) * 512
 		+ lh.payload_offset,
-		(unsigned long long) lh.payload_length - 4);
+		(unsigned long long) lh.payload_length);
+
+  if (cmdline)
+    grub_pass_verity_hash (&lh, cmdline, cmdline_max_len);
 
   off_file = grub_file_offset_open (file, (lh.setup_sects + 1) * 512
 				    + lh.payload_offset,
-				    lh.payload_length - 4);
+				    lh.payload_length);
   if (!off_file)
     goto fail;
 
